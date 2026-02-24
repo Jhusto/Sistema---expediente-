@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Armar Expediente - Sistema Profesional</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -10,210 +10,260 @@
         .preview-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 12px;
-            margin-top: 10px;
+            gap: 8px;
+            margin-top: 8px;
         }
+        @media (min-width: 768px) {
+            .preview-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+        }
+
         .preview-item {
             position: relative;
             display: flex;
             flex-direction: column;
-            gap: 4px;
         }
+
         .preview-img-container {
             width: 100%;
-            height: 100px;
+            aspect-ratio: 1 / 1;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #eee;
-            border-radius: 6px;
-            border: 1px solid #ddd;
+            background: #f3f4f6;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            position: relative;
         }
+
         .preview-img {
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
             transition: transform 0.3s ease;
         }
-        .action-btn {
-            background: rgba(0,0,0,0.6);
+
+        /* Botones de acción minimalistas */
+        .btn-mini-rotate {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: rgba(59, 130, 246, 0.9);
             color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 4px 6px;
-            font-size: 11px;
-            cursor: pointer;
-            text-align: center;
-            height: 28px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 12px;
+            cursor: pointer;
+            border: none;
+            z-index: 10;
         }
-        .btn-rotate { flex-grow: 1; }
-        .btn-delete { background: #991b1b; width: 30px; }
-        .input-group {
+
+        .btn-mini-delete-img {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
             display: flex;
-            gap: 0.5rem;
-            width: 100%;
             align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            z-index: 10;
         }
-        /* Estilos para el Modal de Alerta */
+
         #custom-alert-overlay {
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.7);
             z-index: 9999;
             align-items: center;
             justify-content: center;
+            padding: 15px;
+        }
+        
+        input, select, textarea { font-size: 16px !important; }
+        @media (min-width: 768px) {
+            input, select, textarea { font-size: 14px !important; }
         }
     </style>
 </head>
-<body class="bg-gray-100 p-4 md:p-8">
+<body class="bg-slate-100 text-slate-900 antialiased">
 
     <div id="custom-alert-overlay">
-        <div class="bg-white rounded-lg shadow-2xl w-11/12 max-w-md overflow-hidden transform transition-all">
-            <div class="bg-gray-800 text-white px-4 py-2 flex justify-between items-center">
-                <span class="font-bold text-sm tracking-wider">SISTEMA EXPEDIENTE</span>
-            </div>
-            <div class="p-6">
-                <p id="custom-alert-message" class="text-gray-700 text-sm md:text-base"></p>
-            </div>
-            <div class="bg-gray-50 px-4 py-3 text-right">
-                <button onclick="cerrarAlerta()" class="bg-gray-800 text-white px-6 py-2 rounded text-sm font-semibold hover:bg-gray-700 transition-colors">ACEPTAR</button>
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <div class="bg-slate-800 text-white px-4 py-3 font-bold text-xs uppercase tracking-widest">Sistema Expediente</div>
+            <div class="p-5 text-slate-600 text-sm leading-relaxed" id="custom-alert-message"></div>
+            <div class="p-3 bg-slate-50 text-right">
+                <button onclick="cerrarAlerta()" class="bg-slate-800 text-white px-5 py-2 rounded-lg text-xs font-bold uppercase hover:bg-slate-700 transition-all">Entendido</button>
             </div>
         </div>
     </div>
 
-    <div class="max-w-4xl mx-auto bg-white p-4 md:p-6 rounded-lg shadow-lg">
-        <h1 class="text-2xl md:text-3xl font-bold text-center mb-6 md:mb-8 text-gray-800 uppercase">ARMAR EXPEDIENTE</h1>
+    <div class="max-w-5xl mx-auto min-h-screen flex flex-col p-3 md:p-6">
+        <header class="bg-white rounded-2xl shadow-sm p-4 md:p-6 mb-6 border border-slate-200">
+            <h1 class="text-xl md:text-2xl font-black text-center text-slate-800 uppercase tracking-tighter">Armar Expediente</h1>
+        </header>
 
-        <div class="space-y-6">
-            <div class="border-b pb-4">
-                <label class="block font-bold mb-2 text-sm md:text-base uppercase">Comité de Crédito</label>
-                <div class="input-group">
-                    <input type="file" accept="image/*" onchange="procesarInput(this, 'fijo-0')" class="flex-grow border p-2 rounded text-xs cursor-pointer min-w-0">
-                    <input type="file" accept="image/*" capture="environment" onchange="procesarInput(this, 'fijo-0')" class="hidden" id="cam-fijo-0">
-                    <button onclick="document.getElementById('cam-fijo-0').click()" class="bg-gray-700 text-white px-3 py-2 rounded text-sm shrink-0">📷</button>
+        <main class="flex-grow space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-2">Comité de Crédito</label>
+                    <div class="flex gap-2">
+                        <input type="file" accept="image/*" onchange="procesarInput(this, 'fijo-0')" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200">
+                        <button onclick="document.getElementById('cam-f-0').click()" class="bg-slate-800 text-white p-2 rounded-xl text-lg">📷</button>
+                        <input type="file" accept="image/*" capture="environment" class="hidden" id="cam-f-0" onchange="procesarInput(this, 'fijo-0')">
+                    </div>
+                    <div class="preview-grid" id="preview-fijo-0"></div>
                 </div>
-                <div class="preview-grid" id="preview-fijo-0"></div>
+
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-2">Solicitud de Crédito (Máx 4)</label>
+                    <div class="flex gap-2">
+                        <input type="file" accept="image/*" multiple onchange="procesarMultipleSolicitud(this)" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200">
+                        <button onclick="document.getElementById('cam-sol-m').click()" class="bg-slate-800 text-white p-2 rounded-xl text-lg">📷</button>
+                        <input type="file" accept="image/*" capture="environment" class="hidden" id="cam-sol-m" onchange="procesarMultipleSolicitud(this)">
+                    </div>
+                    <div class="preview-grid" id="preview-solicitud-grid"></div>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-2">Croquis del Grupo</label>
+                    <div class="flex gap-2">
+                        <input type="file" accept="image/*" onchange="procesarInput(this, 'fijo-3')" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200">
+                        <button onclick="document.getElementById('cam-f-3').click()" class="bg-slate-800 text-white p-2 rounded-xl text-lg">📷</button>
+                        <input type="file" accept="image/*" capture="environment" class="hidden" id="cam-f-3" onchange="procesarInput(this, 'fijo-3')">
+                    </div>
+                    <div class="preview-grid" id="preview-fijo-3"></div>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-2">Acta de Compromiso</label>
+                    <div class="flex gap-2">
+                        <input type="file" accept="image/*" onchange="procesarInput(this, 'fijo-2')" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200">
+                        <button onclick="document.getElementById('cam-f-2').click()" class="bg-slate-800 text-white p-2 rounded-xl text-lg">📷</button>
+                        <input type="file" accept="image/*" capture="environment" class="hidden" id="cam-f-2" onchange="procesarInput(this, 'fijo-2')">
+                    </div>
+                    <div class="preview-grid" id="preview-fijo-2"></div>
+                </div>
             </div>
 
-            <div class="border-b pb-4">
-                <label class="block font-bold mb-2 text-sm md:text-base uppercase">Solicitud de Crédito (Máx 4 fotos)</label>
-                <div class="input-group mb-2">
-                    <input type="file" accept="image/*" multiple onchange="procesarMultipleSolicitud(this)" class="flex-grow border p-2 rounded text-xs cursor-pointer min-w-0">
-                    <input type="file" accept="image/*" capture="environment" onchange="procesarMultipleSolicitud(this)" class="hidden" id="cam-solicitud-multi">
-                    <button onclick="document.getElementById('cam-solicitud-multi').click()" class="bg-gray-700 text-white px-3 py-2 rounded text-sm shrink-0">📷</button>
+            <div class="bg-blue-600 p-5 rounded-2xl shadow-lg">
+                <label class="block text-[10px] font-black uppercase text-blue-200 mb-3 tracking-widest text-center">Registrar nuevo integrante</label>
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <input type="text" id="nombre-cliente-temporal" placeholder="Nombres y Apellidos" class="flex-grow p-3 rounded-xl border-none outline-none text-sm font-bold shadow-inner">
+                    <button onclick="confirmarNuevoCliente()" class="bg-white text-blue-600 px-6 py-3 rounded-xl font-black text-sm uppercase hover:bg-blue-50 transition-colors">Confirmar</button>
                 </div>
-                <div class="preview-grid" id="preview-solicitud-grid"></div>
             </div>
 
-            <div class="border-b pb-4">
-                <label class="block font-bold mb-2 text-sm md:text-base uppercase">Croquis del Grupo</label>
-                <div class="input-group">
-                    <input type="file" accept="image/*" onchange="procesarInput(this, 'fijo-3')" class="flex-grow border p-2 rounded text-xs cursor-pointer min-w-0">
-                    <input type="file" accept="image/*" capture="environment" onchange="procesarInput(this, 'fijo-3')" class="hidden" id="cam-fijo-3">
-                    <button onclick="document.getElementById('cam-fijo-3').click()" class="bg-gray-700 text-white px-3 py-2 rounded text-sm shrink-0">📷</button>
-                </div>
-                <div class="preview-grid" id="preview-fijo-3"></div>
+            <div id="clientes-container" class="space-y-6 pt-4">
+                <h2 class="text-xs font-black text-slate-400 uppercase tracking-[0.2em] border-b pb-2">Lista de Expedientes Individuales</h2>
             </div>
+        </main>
 
-            <div class="border-b pb-4">
-                <label class="block font-bold mb-2 text-sm md:text-base uppercase">Acta de Compromiso</label>
-                <div class="input-group">
-                    <input type="file" accept="image/*" onchange="procesarInput(this, 'fijo-2')" class="flex-grow border p-2 rounded text-xs cursor-pointer min-w-0">
-                    <input type="file" accept="image/*" capture="environment" onchange="procesarInput(this, 'fijo-2')" class="hidden" id="cam-fijo-2">
-                    <button onclick="document.getElementById('cam-fijo-2').click()" class="bg-gray-700 text-white px-3 py-2 rounded text-sm shrink-0">📷</button>
-                </div>
-                <div class="preview-grid" id="preview-fijo-2"></div>
-            </div>
-        </div>
-
-        <div id="clientes-container" class="mt-8 space-y-4">
-            <h2 class="text-xl font-semibold italic text-gray-700 uppercase">Sección Clientes</h2>
-        </div>
-
-        <div class="mt-6 flex flex-col sm:flex-row gap-3">
-            <button onclick="agregarCliente()" class="bg-blue-600 text-white px-4 py-3 sm:py-2 rounded hover:bg-blue-700 font-medium w-full sm:w-auto order-2 sm:order-1">
-                + Agregar Cliente
-            </button>
-            <button onclick="generarPDF()" class="bg-green-600 text-white px-4 py-3 sm:py-2 rounded hover:bg-green-700 font-medium w-full sm:w-auto order-1 sm:order-2">
-                Descargar PDF Final
-            </button>
-            <button onclick="borrarTodo()" class="bg-red-500 text-white px-4 py-3 sm:py-2 rounded hover:bg-red-600 font-medium w-full sm:w-auto order-3">
-                Borrar Todo
-            </button>
-        </div>
+        <footer class="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 pb-6">
+            <button onclick="generarPDF()" class="bg-emerald-500 text-white py-4 rounded-2xl font-black uppercase text-sm shadow-lg shadow-emerald-200 hover:bg-emerald-600 transition-all active:scale-95">Descargar PDF Final</button>
+            <button onclick="borrarTodo()" class="bg-slate-200 text-slate-500 py-4 rounded-2xl font-bold uppercase text-xs hover:bg-red-100 hover:text-red-600 transition-all">Limpiar todo el sistema</button>
+        </footer>
     </div>
 
     <script>
-        // --- SISTEMA DE ALERTA PERSONALIZADO ---
-        function mostrarAlerta(mensaje) {
-            document.getElementById('custom-alert-message').innerText = mensaje;
+        function mostrarAlerta(m) {
+            document.getElementById('custom-alert-message').innerText = m;
             document.getElementById('custom-alert-overlay').style.display = 'flex';
         }
-        function cerrarAlerta() {
-            document.getElementById('custom-alert-overlay').style.display = 'none';
-        }
+        function cerrarAlerta() { document.getElementById('custom-alert-overlay').style.display = 'none'; }
 
         let clienteCount = 0;
         let db;
-        const listaDocumentos = [
-            "DNI frontal", 
-            "DNI posterior", 
-            "Selfin de casa", 
-            "Selfin negocio", 
-            "foto negocio", 
-            "negocio 1", 
-            "negocio 2", 
-            "recibo de luz o DJ", 
-            "Sentinel"
-        ];
+        const listaDocs = ["DNI frontal", "DNI posterior", "Selfin de casa", "Selfin negocio", "foto negocio", "negocio 1", "negocio 2", "recibo de luz o DJ", "Sentinel"];
 
         const request = indexedDB.open("ExpedienteDB", 1);
-        request.onupgradeneeded = (e) => {
-            db = e.target.result;
-            db.createObjectStore("datos", { keyPath: "id" });
-        };
-        request.onsuccess = (e) => {
-            db = e.target.result;
-            restaurarDatos();
-        };
+        request.onupgradeneeded = (e) => { db = e.target.result; db.createObjectStore("datos", { keyPath: "id" }); };
+        request.onsuccess = (e) => { db = e.target.result; restaurarDatos(); };
 
-        async function guardarDato(id, valor) {
-            const tx = db.transaction("datos", "readwrite");
-            tx.objectStore("datos").put({ id, valor });
+        async function guardarDato(id, valor) { const tx = db.transaction("datos", "readwrite"); tx.objectStore("datos").put({ id, valor }); }
+        async function obtenerDato(id) { return new Promise(r => { const tx = db.transaction("datos", "readonly"); const req = tx.objectStore("datos").get(id); req.onsuccess = () => r(req.result ? req.result.valor : null); }); }
+        async function eliminarDato(id) { const tx = db.transaction("datos", "readwrite"); tx.objectStore("datos").delete(id); }
+
+        function confirmarNuevoCliente() {
+            const n = document.getElementById('nombre-cliente-temporal').value.trim();
+            if (!n) { mostrarAlerta("SISTEMA EXPEDIENTE: Es necesario agregar un nombre del cliente para continuar."); return; }
+            agregarCliente(n);
+            document.getElementById('nombre-cliente-temporal').value = "";
         }
 
-        async function obtenerDato(id) {
-            return new Promise((resolve) => {
-                const tx = db.transaction("datos", "readonly");
-                const req = tx.objectStore("datos").get(id);
-                req.onsuccess = () => resolve(req.result ? req.result.valor : null);
-            });
+        function agregarCliente(nom = "", idPersist = null) {
+            if (!idPersist) clienteCount++; else clienteCount = Math.max(clienteCount, idPersist);
+            const idActual = idPersist || clienteCount;
+            const container = document.getElementById('clientes-container');
+            const div = document.createElement('div');
+            div.className = "bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden";
+            div.id = `cliente-wrapper-${idActual}`;
+            
+            let ops = listaDocs.map(d => `<option value="${d}">${d}</option>`).join('');
+            div.innerHTML = `
+                <div class="p-4 bg-slate-50 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100">
+                    <div class="flex items-center gap-2 flex-grow">
+                        <input type="text" id="nombre-input-${idActual}" value="${nom}" readonly class="bg-transparent font-black text-slate-700 outline-none border-none w-full sm:w-auto min-w-[150px]">
+                        <button onclick="habilitarEdicion(${idActual}, event)" class="text-blue-500 font-bold text-xs p-2 uppercase">Editar</button>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="toggleAcordeon('cliente-${idActual}')" class="bg-white border border-slate-200 px-4 py-2 rounded-xl text-[10px] font-bold uppercase">Ver fotos</button>
+                        <button onclick="eliminarCliente(${idActual})" class="bg-red-50 text-red-500 p-2 rounded-xl">🗑️</button>
+                    </div>
+                </div>
+                <div id="cliente-${idActual}" class="p-4 hidden space-y-4">
+                    <select onchange="validarRequisitosYFlujo(${idActual}, this)" class="w-full p-3 rounded-xl bg-slate-100 text-xs font-bold uppercase outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">+ Agregar Documento</option>
+                        ${ops}
+                    </select>
+                    <div id="documentos-lista-${idActual}" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+                </div>
+            `;
+            container.appendChild(div);
+            if(!idPersist) { guardarDato(`cliente-${idActual}-nombre`, nom); guardarDato("clienteCount", clienteCount); }
         }
 
-        async function eliminarDato(id) {
-            const tx = db.transaction("datos", "readwrite");
-            tx.objectStore("datos").delete(id);
+        function habilitarEdicion(id, ev) {
+            const inp = document.getElementById(`nombre-input-${id}`);
+            const btn = ev.currentTarget;
+            if (inp.readOnly) {
+                inp.readOnly = false; inp.focus(); inp.style.borderBottom = "2px solid #3b82f6"; btn.innerText = "GUARDAR";
+            } else {
+                inp.readOnly = true; inp.style.borderBottom = "none"; btn.innerText = "EDITAR";
+                guardarDato(`cliente-${id}-nombre`, inp.value);
+            }
+        }
+
+        async function procesarInput(input, sId) {
+            if (input.files && input.files[0]) {
+                const b64 = await readFileAsDataURL(input.files[0]);
+                await guardarDato(sId, b64); await guardarDato(sId + "-rot", 0);
+                renderPreview(sId, b64, 0);
+            }
         }
 
         async function procesarMultipleSolicitud(input) {
             if (input.files) {
-                const filesArray = Array.from(input.files);
-                let countExistente = 0;
-                for(let i=0; i<4; i++) if(await obtenerDato(`fijo-1-${i}`)) countExistente++;
-                let fotosAProcesar = filesArray.slice(0, 4 - countExistente);
-                for(let file of fotosAProcesar) {
+                const arr = Array.from(input.files);
+                let cur = 0; for(let i=0; i<4; i++) if(await obtenerDato(`fijo-1-${i}`)) cur++;
+                for(let f of arr.slice(0, 4 - cur)) {
                     for(let i=0; i<4; i++) {
                         if(!(await obtenerDato(`fijo-1-${i}`))) {
-                            const base64 = await readFileAsDataURL(file);
-                            await guardarDato(`fijo-1-${i}`, base64);
-                            await guardarDato(`fijo-1-${i}-rot`, 0);
-                            renderPreview(`fijo-1-${i}`, base64, 0);
-                            break;
+                            const b64 = await readFileAsDataURL(f);
+                            await guardarDato(`fijo-1-${i}`, b64); await guardarDato(`fijo-1-${i}-rot`, 0);
+                            renderPreview(`fijo-1-${i}`, b64, 0); break;
                         }
                     }
                 }
@@ -221,337 +271,164 @@
             }
         }
 
-        async function procesarInput(input, storageId) {
-            if (input.files && input.files[0]) {
-                const base64 = await readFileAsDataURL(input.files[0]);
-                await guardarDato(storageId, base64);
-                await guardarDato(storageId + "-rot", 0);
-                renderPreview(storageId, base64, 0);
-            }
-        }
-
-        function renderPreview(storageId, base64, rotation) {
-            let container;
-            if (storageId.startsWith('fijo-1-')) {
-                let subContainer = document.getElementById(`preview-item-${storageId}`);
-                if(!subContainer) {
-                    subContainer = document.createElement('div');
-                    subContainer.id = `preview-item-${storageId}`;
-                    subContainer.className = "preview-item";
-                    document.getElementById('preview-solicitud-grid').appendChild(subContainer);
-                }
-                container = subContainer;
-            } else {
-                container = document.getElementById(`preview-${storageId}`);
-                if(!container) return;
-            }
-
-            container.innerHTML = `
+        function renderPreview(sId, b64, rot) {
+            let c;
+            if (sId.startsWith('fijo-1-')) {
+                let sc = document.getElementById(`preview-item-${sId}`);
+                if(!sc) { sc = document.createElement('div'); sc.id = `preview-item-${sId}`; sc.className = "preview-item"; document.getElementById('preview-solicitud-grid').appendChild(sc); }
+                c = sc;
+            } else { c = document.getElementById(`preview-${sId}`); if(!c) return; }
+            c.innerHTML = `
                 <div class="preview-img-container">
-                    <img src="${base64}" class="preview-img" style="transform: rotate(${rotation}deg)">
-                </div>
-                <div class="flex gap-1">
-                    <button class="action-btn btn-rotate flex-grow" onclick="rotarImagen('${storageId}')">🔄 Girar</button>
-                    <button class="action-btn btn-delete" onclick="quitarFoto('${storageId}')">X</button>
+                    <button class="btn-mini-delete-img" onclick="quitarFoto('${sId}')">X</button>
+                    <button class="btn-mini-rotate" onclick="rotarImagen('${sId}')">↺</button>
+                    <img src="${b64}" class="preview-img" style="transform: rotate(${rot}deg)">
                 </div>
             `;
         }
 
-        async function quitarFoto(storageId) {
-            if(confirm("¿Eliminar esta foto?")) {
-                await eliminarDato(storageId);
-                await eliminarDato(storageId + "-rot");
-                if (storageId.startsWith('fijo-1-')) {
-                    const el = document.getElementById(`preview-item-${storageId}`);
-                    if(el) el.remove();
-                } else {
-                    const el = document.getElementById(`preview-${storageId}`);
-                    if(el) el.innerHTML = "";
-                }
+        async function rotarImagen(sId) {
+            let r = ( (await obtenerDato(sId + "-rot") || 0) + 90) % 360;
+            await guardarDato(sId + "-rot", r); renderPreview(sId, await obtenerDato(sId), r);
+        }
+
+        async function quitarFoto(sId) {
+            if(confirm("¿Eliminar fotografía?")) {
+                await eliminarDato(sId); await eliminarDato(sId + "-rot");
+                if (sId.startsWith('fijo-1-')) document.getElementById(`preview-item-${sId}`)?.remove();
+                else document.getElementById(`preview-${sId}`).innerHTML = "";
             }
         }
 
-        async function rotarImagen(storageId) {
-            let currentRot = await obtenerDato(storageId + "-rot") || 0;
-            let newRot = (currentRot + 90) % 360;
-            await guardarDato(storageId + "-rot", newRot);
-            const base64 = await obtenerDato(storageId);
-            renderPreview(storageId, base64, newRot);
-        }
+        async function validarRequisitosYFlujo(cliId, sel) {
+            const tipo = sel.value; if(!tipo) return;
+            const ord = await obtenerDato(`cli-${cliId}-orden`) || [];
+            if(ord.some(i => i.tipo === tipo)) { mostrarAlerta("SISTEMA EXPEDIENTE: Esta sección ya ha sido agregada."); sel.value = ""; return; }
 
-        function agregarCliente(nombreGuardado = "", idPersistente = null) {
-            if (!idPersistente) clienteCount++;
-            else clienteCount = Math.max(clienteCount, idPersistente);
-            const idActual = idPersistente || clienteCount;
-            const container = document.getElementById('clientes-container');
-            const clienteDiv = document.createElement('div');
-            clienteDiv.className = "border rounded bg-gray-50 overflow-hidden";
-            clienteDiv.id = `cliente-wrapper-${idActual}`;
-            
-            let opciones = listaDocumentos.map(doc => `<option value="${doc}">${doc}</option>`).join('');
-            clienteDiv.innerHTML = `
-                <div class="w-full p-4 bg-gray-200 font-bold flex flex-wrap justify-between items-center gap-2">
-                    <div class="flex-grow cursor-pointer min-w-[150px]" onclick="toggleAcordeon('cliente-${idActual}')">
-                        <span class="text-sm">Cliente: <input type="text" id="nombre-input-${idActual}" value="${nombreGuardado}" onchange="actualizarNombreCliente(${idActual}, this.value)" placeholder="Nombre" class="bg-transparent border-b border-gray-400 focus:outline-none w-1/2" onclick="event.stopPropagation()"></span>
-                        <span class="ml-1 text-xs text-gray-500">▼</span>
-                    </div>
-                    <button onclick="eliminarCliente(${idActual})" class="bg-red-800 text-white text-[10px] px-2 py-1 rounded">BORRAR</button>
-                </div>
-                <div id="cliente-${idActual}" class="p-4 hidden space-y-4">
-                    <div class="bg-white p-3 rounded border">
-                        <select onchange="validarRequisitosYFlujo(${idActual}, this)" class="w-full border p-2 rounded text-sm bg-gray-50">
-                            <option value="">-- Seleccione un tipo --</option>
-                            ${opciones}
-                        </select>
-                    </div>
-                    <div id="documentos-lista-${idActual}" class="space-y-4"></div>
-                </div>
-            `;
-            container.appendChild(clienteDiv);
-            if(!idPersistente) guardarDato(`cliente-${idActual}-nombre`, "");
-            guardarDato("clienteCount", clienteCount);
-        }
-
-        async function validarRequisitosYFlujo(cliId, selectEl) {
-            const tipoSeleccionado = selectEl.value;
-            if(!tipoSeleccionado) return;
-
-            const nombreActual = document.getElementById(`nombre-input-${cliId}`).value.trim();
-            if(!nombreActual) {
-                mostrarAlerta("Es necesario agregar un nombre del cliente para continuar");
-                selectEl.value = "";
-                return;
-            }
-
-            const ordenActual = await obtenerDato(`cli-${cliId}-orden`) || [];
-            
-            if(ordenActual.some(item => item.tipo === tipoSeleccionado)) {
-                mostrarAlerta(`La sección "${tipoSeleccionado}" ya existe para este cliente.`);
-                selectEl.value = "";
-                return;
-            }
-
-            const indexSeleccionado = listaDocumentos.indexOf(tipoSeleccionado);
-            const esNegocio = (tipoSeleccionado === "negocio 1" || tipoSeleccionado === "negocio 2");
-
-            if(esNegocio) {
-                const requisitos = ["DNI frontal", "DNI posterior", "Selfin de casa", "Selfin negocio", "foto negocio"];
-                let faltantes = [];
-                requisitos.forEach(req => {
-                    if(!ordenActual.some(item => item.tipo === req)) faltantes.push(req);
-                });
-
-                if(faltantes.length > 0) {
-                    mostrarAlerta(`No puede agregar "${tipoSeleccionado}" sin antes haber agregado las secciones de flujo obligatorio: ${faltantes.join(", ")}.`);
-                    selectEl.value = "";
-                    return;
-                }
+            if(tipo === "negocio 1" || tipo === "negocio 2") {
+                const reqs = ["DNI frontal", "DNI posterior", "Selfin de casa", "Selfin negocio", "foto negocio"];
+                let falt = reqs.filter(r => !ord.some(i => i.tipo === r));
+                if(falt.length > 0) { mostrarAlerta(`SISTEMA EXPEDIENTE: No se permite agregar esta sección sin haber agregado: ${falt.join(", ")}`); sel.value = ""; return; }
             } else {
-                for(let i = 0; i < indexSeleccionado; i++) {
-                    const tipoNecesario = listaDocumentos[i];
-                    if(tipoNecesario === "negocio 1" || tipoNecesario === "negocio 2") continue;
-                    const existe = ordenActual.some(item => item.tipo === tipoNecesario);
-                    if(!existe) {
-                        mostrarAlerta(`Error de orden: Primero debe seleccionar "${tipoNecesario}" antes de agregar "${tipoSeleccionado}".`);
-                        selectEl.value = "";
-                        return;
-                    }
+                const idx = listaDocs.indexOf(tipo);
+                for(let i=0; i<idx; i++) {
+                    if(listaDocs[i].includes("negocio")) continue;
+                    if(!ord.some(it => it.tipo === listaDocs[i])) { mostrarAlerta(`SISTEMA EXPEDIENTE: Debe agregar primero "${listaDocs[i]}" según el flujo obligatorio.`); sel.value = ""; return; }
                 }
             }
-
-            crearCampoDocumento(cliId, tipoSeleccionado);
-            selectEl.value = "";
+            crearCampoDoc(cliId, tipo); sel.value = "";
         }
 
-        async function crearCampoDocumento(cliId, tipoDoc, idUnicoGuardado = null) {
-            const container = document.getElementById(`documentos-lista-${cliId}`);
-            const idUnico = idUnicoGuardado || Date.now() + Math.random().toString(36).substr(2, 5);
+        async function crearCampoDoc(cliId, t, idUG = null) {
+            const c = document.getElementById(`documentos-lista-${cliId}`);
+            const idU = idUG || Date.now() + Math.random().toString(36).substr(2, 4);
             const div = document.createElement('div');
-            div.className = "doc-item border-l-4 border-blue-400 bg-white p-3 shadow-sm rounded";
-            div.id = `doc-wrapper-${idUnico}`;
-            div.setAttribute('data-tipo', tipoDoc);
-            const storageId = `img-${cliId}-${idUnico}-0`;
+            div.className = "bg-slate-50 p-3 rounded-2xl border border-slate-100";
+            div.id = `doc-wrapper-${idU}`; div.setAttribute('data-tipo', t);
+            const sId = `img-${cliId}-${idU}-0`;
             div.innerHTML = `
-                <div class="flex justify-between items-start mb-2">
-                    <span class="text-xs font-bold text-blue-800 uppercase">${tipoDoc}</span>
-                    <button onclick="eliminarSeccionDoc('${cliId}', '${idUnico}')" class="text-red-800 text-[10px] font-bold uppercase">Borrar Sección</button>
+                <div class="flex justify-between items-center mb-2"><span class="text-[9px] font-black uppercase text-slate-400 tracking-wider">${t}</span><button onclick="eliminarSeccionDoc('${cliId}', '${idU}')" class="text-red-400 text-[9px] font-bold uppercase">Quitar</button></div>
+                <div class="flex gap-2 mb-2">
+                    <input type="file" onchange="procesarInput(this, '${sId}')" class="text-[10px] w-full">
+                    <button onclick="document.getElementById('cam-${sId}').click()" class="bg-white border p-1 rounded-lg">📷</button>
+                    <input type="file" capture="environment" class="hidden" id="cam-${sId}" onchange="procesarInput(this, '${sId}')">
                 </div>
-                <div class="mb-2">
-                    <div class="input-group">
-                        <input type="file" accept="image/*" onchange="procesarInput(this, '${storageId}')" class="flex-grow border p-1 rounded text-[10px] min-w-0">
-                        <input type="file" accept="image/*" capture="environment" onchange="procesarInput(this, '${storageId}')" class="hidden" id="cam-${storageId}">
-                        <button onclick="document.getElementById('cam-${storageId}').click()" class="bg-gray-600 text-white px-2 py-1 rounded text-xs shrink-0">📷</button>
-                    </div>
-                    <div class="preview-grid" id="preview-${storageId}"></div>
-                </div>
+                <div class="preview-grid" id="preview-${sId}"></div>
             `;
-            const indexReferencia = listaDocumentos.indexOf(tipoDoc);
-            const hijos = Array.from(container.children);
-            let insertado = false;
-            for (let hijo of hijos) {
-                if (listaDocumentos.indexOf(hijo.getAttribute('data-tipo')) > indexReferencia) {
-                    container.insertBefore(div, hijo);
-                    insertado = true;
-                    break;
-                }
-            }
-            if (!insertado) container.appendChild(div);
-            if(!idUnicoGuardado) {
-                let ordenActual = await obtenerDato(`cli-${cliId}-orden`) || [];
-                ordenActual.push({id: idUnico, tipo: tipoDoc});
-                await guardarDato(`cli-${cliId}-orden`, ordenActual);
-            }
+            const iR = listaDocs.indexOf(t);
+            const hs = Array.from(c.children); let ins = false;
+            for (let h of hs) { if (listaDocs.indexOf(h.getAttribute('data-tipo')) > iR) { c.insertBefore(div, h); ins = true; break; } }
+            if (!ins) c.appendChild(div);
+            if(!idUG) { let o = await obtenerDato(`cli-${cliId}-orden`) || []; o.push({id: idU, tipo: t}); await guardarDato(`cli-${cliId}-orden`, o); }
         }
 
-        async function eliminarSeccionDoc(cliId, idUnico) {
+        async function eliminarSeccionDoc(cliId, idU) {
             if(confirm("¿Eliminar esta sección?")) {
-                document.getElementById(`doc-wrapper-${idUnico}`).remove();
-                let ordenActual = await obtenerDato(`cli-${cliId}-orden`) || [];
-                ordenActual = ordenActual.filter(item => item.id !== idUnico);
-                await guardarDato(`cli-${cliId}-orden`, ordenActual);
-                await eliminarDato(`img-${cliId}-${idUnico}-0`);
-                await eliminarDato(`img-${cliId}-${idUnico}-0-rot`);
+                document.getElementById(`doc-wrapper-${idU}`).remove();
+                let o = (await obtenerDato(`cli-${cliId}-orden`) || []).filter(i => i.id !== idU);
+                await guardarDato(`cli-${cliId}-orden`, o);
+                await eliminarDato(`img-${cliId}-${idU}-0`); await eliminarDato(`img-${cliId}-${idU}-0-rot`);
             }
         }
 
         async function restaurarDatos() {
-            for(let i of [0, 3, 2]) {
-                const img = await obtenerDato(`fijo-${i}`);
-                if(img) renderPreview(`fijo-${i}`, img, await obtenerDato(`fijo-${i}-rot`) || 0);
-            }
-            for(let i=0; i<4; i++) {
-                const img = await obtenerDato(`fijo-1-${i}`);
-                if(img) renderPreview(`fijo-1-${i}`, img, await obtenerDato(`fijo-1-${i}-rot`) || 0);
-            }
-            const savedCount = await obtenerDato("clienteCount") || 0;
-            for(let i=1; i<=savedCount; i++) {
-                const nombre = await obtenerDato(`cliente-${i}-nombre`);
-                if(nombre !== null) {
-                    agregarCliente(nombre, i);
-                    const orden = await obtenerDato(`cli-${i}-orden`) || [];
-                    const ordenados = orden.sort((a,b) => listaDocumentos.indexOf(a.tipo) - listaDocumentos.indexOf(b.tipo));
-                    for(let item of ordenados) {
-                        await crearCampoDocumento(i, item.tipo, item.id);
-                        const storageId = `img-${i}-${item.id}-0`;
-                        const img = await obtenerDato(storageId);
-                        if(img) renderPreview(storageId, img, await obtenerDato(storageId + "-rot") || 0);
+            for(let i of [0, 3, 2]) { const f = await obtenerDato(`fijo-${i}`); if(f) renderPreview(`fijo-${i}`, f, await obtenerDato(`fijo-${i}-rot`) || 0); }
+            for(let i=0; i<4; i++) { const f = await obtenerDato(`fijo-1-${i}`); if(f) renderPreview(`fijo-1-${i}`, f, await obtenerDato(`fijo-1-${i}-rot`) || 0); }
+            const sc = await obtenerDato("clienteCount") || 0;
+            for(let i=1; i<=sc; i++) {
+                const n = await obtenerDato(`cliente-${i}-nombre`);
+                if(n !== null) {
+                    agregarCliente(n, i);
+                    const o = await obtenerDato(`cli-${i}-orden`) || [];
+                    for(let it of o.sort((a,b) => listaDocs.indexOf(a.tipo) - listaDocs.indexOf(b.tipo))) {
+                        await crearCampoDoc(i, it.tipo, it.id);
+                        const sId = `img-${i}-${it.id}-0`; const f = await obtenerDato(sId);
+                        if(f) renderPreview(sId, f, await obtenerDato(sId + "-rot") || 0);
                     }
                 }
             }
         }
 
-        async function prepararImagenPDF(storageId) {
-            const imgData = await obtenerDato(storageId);
-            if (!imgData) return null;
-            const rot = await obtenerDato(storageId + "-rot") || 0;
-            const img = new Image();
-            img.src = imgData;
-            await img.decode();
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            if(rot === 90 || rot === 270) { canvas.width = img.height; canvas.height = img.width; }
-            else { canvas.width = img.width; canvas.height = img.height; }
-            ctx.translate(canvas.width/2, canvas.height/2);
-            ctx.rotate(rot * Math.PI / 180);
-            ctx.drawImage(img, -img.width/2, -img.height/2);
-            return { url: canvas.toDataURL('image/jpeg', 0.8), w: canvas.width, h: canvas.height };
+        async function prepararImagenPDF(sId) {
+            const d = await obtenerDato(sId); if (!d) return null;
+            const r = await obtenerDato(sId + "-rot") || 0;
+            const img = new Image(); img.src = d; await img.decode();
+            const canv = document.createElement('canvas'); const ctx = canv.getContext('2d');
+            if(r === 90 || r === 270) { canv.width = img.height; canv.height = img.width; } else { canv.width = img.width; canv.height = img.height; }
+            ctx.translate(canv.width/2, canv.height/2); ctx.rotate(r * Math.PI / 180); ctx.drawImage(img, -img.width/2, -img.height/2);
+            return { url: canv.toDataURL('image/jpeg', 0.8), w: canv.width, h: canv.height };
         }
 
         async function generarPDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'mm', 'a4');
-            const pw = doc.internal.pageSize.getWidth();
-            const ph = doc.internal.pageSize.getHeight();
-            let firstPage = true;
-
-            const addImageToDoc = (imgObj, x, y, maxW, maxH) => {
-                const ratio = imgObj.w / imgObj.h;
-                let w = maxW, h = w / ratio;
-                if (h > maxH) { h = maxH; w = h * ratio; }
-                doc.addImage(imgObj.url, 'JPEG', x + (maxW - w) / 2, y + (maxH - h) / 2, w, h);
+            const { jsPDF } = window.jspdf; const doc = new jsPDF('p', 'mm', 'a4');
+            const pw = doc.internal.pageSize.getWidth(); const ph = doc.internal.pageSize.getHeight();
+            let first = true;
+            const addImg = (obj, x, y, mw, mh) => {
+                const r = obj.w / obj.h; let w = mw, h = w / r; if (h > mh) { h = mh; w = h * r; }
+                doc.addImage(obj.url, 'JPEG', x + (mw - w) / 2, y + (mh - h) / 2, w, h);
             };
+            const addNom = (n) => { doc.setFontSize(10); doc.setTextColor(100); doc.text(`CLIENTE: ${n.toUpperCase()}`, 10, 8); };
 
-            const imgComite = await prepararImagenPDF('fijo-0');
-            if(imgComite) { doc.addImage(imgComite.url, 'JPEG', 10, 10, pw-20, ph-20); firstPage = false; }
-
-            const fotosSolicitud = [];
+            const cmt = await prepararImagenPDF('fijo-0'); if(cmt) { doc.addImage(cmt.url, 'JPEG', 10, 10, pw-20, ph-20); first = false; }
             for(let i=0; i<4; i++) {
-                const img = await prepararImagenPDF(`fijo-1-${i}`);
-                if(img) fotosSolicitud.push(img);
+                const f = await prepararImagenPDF(`fijo-1-${i}`);
+                if(f) { if(!first) doc.addPage(); addImg(f, 10, 10, pw-20, ph-20); first = false; }
             }
-            if(fotosSolicitud.length > 0) {
-                if(!firstPage) doc.addPage();
-                let x = 10, y = 10, boxW = (pw-30)/2, boxH = (ph-30)/2;
-                fotosSolicitud.forEach((img) => {
-                    addImageToDoc(img, x, y, boxW, boxH);
-                    x += boxW + 10;
-                    if(x + boxW > pw) { x = 10; y += boxH + 10; }
-                });
-                firstPage = false;
+            for(let k of ['fijo-3', 'fijo-2']) { const f = await prepararImagenPDF(k); if(f) { doc.addPage(); addImg(f, 10, 10, pw-20, ph-20); } }
+
+            const sc = await obtenerDato("clienteCount") || 0;
+            for (let i = 1; i <= sc; i++) {
+                const n = await obtenerDato(`cliente-${i}-nombre`); if (n === null) continue;
+                const o = await obtenerDato(`cli-${i}-orden`) || [];
+                const dcs = [];
+                for (let it of o.sort((a,b) => listaDocs.indexOf(a.tipo) - listaDocs.indexOf(b.tipo))) {
+                    const f = await prepararImagenPDF(`img-${i}-${it.id}-0`); if (f) dcs.push({ tipo: it.tipo, foto: f });
+                }
+                const dnis = dcs.filter(d => d.tipo.startsWith("DNI")).map(d => d.foto);
+                if (dnis.length > 0) { doc.addPage(); addNom(n); if (dnis[0]) addImg(dnis[0], 10, 10, pw - 20, (ph / 2) - 15); if (dnis[1]) addImg(dnis[1], 10, ph / 2, pw - 20, (ph / 2) - 15); }
+                const grd = dcs.filter(d => ["Selfin de casa", "Selfin negocio", "foto negocio", "negocio 1", "negocio 2"].includes(d.tipo)).map(d => d.foto);
+                if (grd.length > 0) {
+                    doc.addPage(); addNom(n); let x = 10, y = 15, bw = (pw-30)/2, bh = (ph-40)/3;
+                    grd.forEach((im, ix) => { if(ix > 0 && ix % 6 === 0) { doc.addPage(); addNom(n); x=10; y=15; } addImg(im, x, y, bw, bh); x += bw + 10; if(x + bw > pw) { x = 10; y += bh + 10; } });
+                }
+                const fin = dcs.filter(d => ["recibo de luz o DJ", "Sentinel"].includes(d.tipo)).map(d => d.foto);
+                if (fin.length > 0) { doc.addPage(); addNom(n); if (fin[0]) addImg(fin[0], 10, 10, pw - 20, (ph / 2) - 15); if (fin[1]) addImg(fin[1], 10, ph / 2, pw - 20, (ph / 2) - 15); }
             }
-
-            for(let key of ['fijo-3', 'fijo-2']) {
-                const img = await prepararImagenPDF(key);
-                if(img) { doc.addPage(); addImageToDoc(img, 10, 10, pw-20, ph-20); }
-            }
-
-            const savedCount = await obtenerDato("clienteCount") || 0;
-            for (let i = 1; i <= savedCount; i++) {
-                if (await obtenerDato(`cliente-${i}-nombre`) === null) continue;
-                const orden = await obtenerDato(`cli-${i}-orden`) || [];
-                const docsCliente = [];
-                for (let item of orden.sort((a,b) => listaDocumentos.indexOf(a.tipo) - listaDocumentos.indexOf(b.tipo))) {
-                    const foto = await prepararImagenPDF(`img-${i}-${item.id}-0`);
-                    if (foto) docsCliente.push({ tipo: item.tipo, foto });
-                }
-
-                const dniFotos = docsCliente.filter(d => d.tipo.startsWith("DNI")).map(d => d.foto);
-                if (dniFotos.length > 0) {
-                    doc.addPage();
-                    if (dniFotos[0]) addImageToDoc(dniFotos[0], 10, 10, pw - 20, (ph / 2) - 15);
-                    if (dniFotos[1]) addImageToDoc(dniFotos[1], 10, ph / 2, pw - 20, (ph / 2) - 15);
-                }
-
-                const fotosGrid = docsCliente.filter(d => ["Selfin de casa", "Selfin negocio", "foto negocio", "negocio 1", "negocio 2"].includes(d.tipo)).map(d => d.foto);
-                if (fotosGrid.length > 0) {
-                    doc.addPage();
-                    let x = 10, y = 10, boxW = (pw-30)/2, boxH = (ph-40)/3;
-                    fotosGrid.forEach((img, idx) => {
-                        if(idx > 0 && idx % 6 === 0) { doc.addPage(); x=10; y=10; }
-                        addImageToDoc(img, x, y, boxW, boxH);
-                        x += boxW + 10;
-                        if(x + boxW > pw) { x = 10; y += boxH + 10; }
-                    });
-                }
-
-                const fotosFin = docsCliente.filter(d => ["recibo de luz o DJ", "Sentinel"].includes(d.tipo)).map(d => d.foto);
-                if (fotosFin.length > 0) {
-                    doc.addPage();
-                    if (fotosFin[0]) addImageToDoc(fotosFin[0], 10, 10, pw - 20, (ph / 2) - 15);
-                    if (fotosFin[1]) addImageToDoc(fotosFin[1], 10, ph / 2, pw - 20, (ph / 2) - 15);
-                }
-            }
-            doc.save("expediente_profesional.pdf");
+            doc.save(`Expediente_${new Date().getTime()}.pdf`);
         }
 
         async function eliminarCliente(id) {
-            if(confirm("¿Eliminar cliente completo?")) {
-                const el = document.getElementById(`cliente-wrapper-${id}`);
-                if(el) el.remove();
-                const orden = await obtenerDato(`cli-${id}-orden`) || [];
-                for(let item of orden) {
-                    await eliminarDato(`img-${id}-${item.id}-0`);
-                    await eliminarDato(`img-${id}-${item.id}-0-rot`);
-                }
-                await eliminarDato(`cli-${id}-orden`);
-                await eliminarDato(`cliente-${id}-nombre`);
+            if(confirm("¿Eliminar este expediente individual?")) {
+                document.getElementById(`cliente-wrapper-${id}`).remove();
+                const o = await obtenerDato(`cli-${id}-orden`) || [];
+                for(let it of o) { await eliminarDato(`img-${id}-${it.id}-0`); await eliminarDato(`img-${id}-${it.id}-0-rot`); }
+                await eliminarDato(`cli-${id}-orden`); await eliminarDato(`cliente-${id}-nombre`);
             }
         }
 
-        async function actualizarNombreCliente(id, valor) { await guardarDato(`cliente-${id}-nombre`, valor); }
         function toggleAcordeon(id) { document.getElementById(id).classList.toggle('hidden'); }
-        function borrarTodo() { if(confirm("¿Borrar TODO el expediente?")) { indexedDB.deleteDatabase("ExpedienteDB"); location.reload(); } }
-        function readFileAsDataURL(file) { return new Promise((resolve) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.readAsDataURL(file); }); }
+        function borrarTodo() { if(confirm("¿Borrar todos los datos?")) { indexedDB.deleteDatabase("ExpedienteDB"); location.reload(); } }
+        function readFileAsDataURL(f) { return new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result); rd.readAsDataURL(f); }); }
     </script>
 </body>
 </html>
