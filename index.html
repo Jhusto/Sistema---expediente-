@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Armar Expediente - Sistema Profesional</title>
+    <title>SISTEMA EXPEDIENTE - Profesional</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
@@ -17,12 +17,6 @@
             .preview-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
         }
 
-        .preview-item {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-        }
-
         .preview-img-container {
             width: 100%;
             aspect-ratio: 1 / 1;
@@ -34,6 +28,7 @@
             border-radius: 8px;
             border: 1px solid #e5e7eb;
             position: relative;
+            cursor: pointer;
         }
 
         .preview-img {
@@ -43,7 +38,6 @@
             transition: transform 0.3s ease;
         }
 
-        /* Botones de acción minimalistas */
         .btn-mini-rotate {
             position: absolute;
             top: 4px;
@@ -58,7 +52,6 @@
             justify-content: center;
             font-size: 12px;
             cursor: pointer;
-            border: none;
             z-index: 10;
         }
 
@@ -77,7 +70,6 @@
             font-size: 10px;
             font-weight: bold;
             cursor: pointer;
-            border: none;
             z-index: 10;
         }
 
@@ -91,22 +83,63 @@
             justify-content: center;
             padding: 15px;
         }
-        
-        input, select, textarea { font-size: 16px !important; }
-        @media (min-width: 768px) {
-            input, select, textarea { font-size: 14px !important; }
+
+        #fullscreen-viewer {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 10000;
+            overflow: hidden;
+            touch-action: none;
+            align-items: center;
+            justify-content: center;
         }
+        #img-full {
+            max-width: 100%;
+            max-height: 100%;
+            user-select: none;
+            transform-origin: center center;
+            transition: transform 0.1s ease-out;
+        }
+
+        .seccion-incompleta { background-color: #fee2e2 !important; border: 2px solid #ef4444 !important; }
+        .seccion-completa { background-color: #dcfce7 !important; border: 2px solid #22c55e !important; }
+        .cliente-header-incompleto { background-color: #fee2e2 !important; border: 2px solid #ef4444 !important; }
+        .cliente-header-completo { background-color: #dcfce7 !important; border: 2px solid #22c55e !important; }
+        
+        .status-badge { font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
+        input, select, textarea { font-size: 16px !important; }
+
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .accordion-open .accordion-content {
+            max-height: 2000px;
+            padding-bottom: 1rem;
+        }
+        
+        .accordion-arrow { transition: transform 0.3s ease; }
+        .accordion-open .accordion-arrow { transform: rotate(180deg); }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-900 antialiased">
 
+    <div id="fullscreen-viewer">
+        <div id="close-viewer" onclick="cerrarVisor()" class="absolute top-5 right-5 bg-white text-black w-10 h-10 rounded-full flex items-center justify-center font-bold cursor-pointer z-[10001]">✕</div>
+        <img id="img-full" src="" alt="Vista previa">
+    </div>
+
     <div id="custom-alert-overlay">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
-            <div class="bg-slate-800 text-white px-4 py-3 font-bold text-xs uppercase tracking-widest">Sistema Expediente</div>
+            <div class="bg-slate-800 text-white px-4 py-3 font-bold text-xs uppercase tracking-widest">SISTEMA EXPEDIENTE</div>
             <div class="p-5 text-slate-600 text-sm leading-relaxed" id="custom-alert-message"></div>
-            <div class="p-3 bg-slate-50 text-right">
-                <button onclick="cerrarAlerta()" class="bg-slate-800 text-white px-5 py-2 rounded-lg text-xs font-bold uppercase hover:bg-slate-700 transition-all">Entendido</button>
+            <div class="p-5 pt-0 hidden" id="custom-alert-input-container">
+                <input type="text" id="custom-alert-input" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
             </div>
+            <div class="p-3 bg-slate-50 flex justify-end gap-2" id="alert-buttons-container"></div>
         </div>
     </div>
 
@@ -117,318 +150,422 @@
 
         <main class="flex-grow space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-2">Comité de Crédito</label>
-                    <div class="flex gap-2">
-                        <input type="file" accept="image/*" onchange="procesarInput(this, 'fijo-0')" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200">
-                        <button onclick="document.getElementById('cam-f-0').click()" class="bg-slate-800 text-white p-2 rounded-xl text-lg">📷</button>
-                        <input type="file" accept="image/*" capture="environment" class="hidden" id="cam-f-0" onchange="procesarInput(this, 'fijo-0')">
+                <div id="box-fijo-0" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden transition-all">
+                    <div class="p-4 flex justify-between items-center cursor-pointer" onclick="this.parentElement.classList.toggle('accordion-open')">
+                        <div><label class="block text-[10px] font-black uppercase text-slate-400">Comité de Crédito</label><span id="badge-fijo-0" class="status-badge bg-red-100 text-red-600">Incompleto</span></div>
+                        <span class="text-slate-400 accordion-arrow">▼</span>
                     </div>
-                    <div class="preview-grid" id="preview-fijo-0"></div>
+                    <div class="accordion-content px-4">
+                        <div class="flex gap-2">
+                            <input type="file" accept="image/*" multiple onchange="procesarInputMultiple(this, 'fijo-0')" class="block w-full text-xs">
+                            <button onclick="document.getElementById('cam-f-0').click()" class="bg-slate-800 text-white p-2 rounded-xl">📷</button>
+                            <input type="file" capture="environment" class="hidden" id="cam-f-0" onchange="procesarInputMultiple(this, 'fijo-0')">
+                        </div>
+                        <div class="preview-grid" id="preview-fijo-0"></div>
+                    </div>
                 </div>
 
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-2">Solicitud de Crédito (Máx 4)</label>
-                    <div class="flex gap-2">
-                        <input type="file" accept="image/*" multiple onchange="procesarMultipleSolicitud(this)" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200">
-                        <button onclick="document.getElementById('cam-sol-m').click()" class="bg-slate-800 text-white p-2 rounded-xl text-lg">📷</button>
-                        <input type="file" accept="image/*" capture="environment" class="hidden" id="cam-sol-m" onchange="procesarMultipleSolicitud(this)">
+                <div id="box-fijo-1" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden transition-all">
+                    <div class="p-4 flex justify-between items-center cursor-pointer" onclick="this.parentElement.classList.toggle('accordion-open')">
+                        <div><label class="block text-[10px] font-black uppercase text-slate-400">Solicitud de Crédito</label><span id="badge-fijo-1" class="status-badge bg-red-100 text-red-600">Incompleto</span></div>
+                        <span class="text-slate-400 accordion-arrow">▼</span>
                     </div>
-                    <div class="preview-grid" id="preview-solicitud-grid"></div>
+                    <div class="accordion-content px-4">
+                        <div class="flex gap-2">
+                            <input type="file" accept="image/*" multiple onchange="procesarInputMultiple(this, 'fijo-1')" class="block w-full text-xs">
+                            <button onclick="document.getElementById('cam-sol-m').click()" class="bg-slate-800 text-white p-2 rounded-xl">📷</button>
+                            <input type="file" capture="environment" class="hidden" id="cam-sol-m" onchange="procesarInputMultiple(this, 'fijo-1')">
+                        </div>
+                        <div class="preview-grid" id="preview-fijo-1"></div>
+                    </div>
                 </div>
 
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-2">Croquis del Grupo</label>
-                    <div class="flex gap-2">
-                        <input type="file" accept="image/*" onchange="procesarInput(this, 'fijo-3')" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200">
-                        <button onclick="document.getElementById('cam-f-3').click()" class="bg-slate-800 text-white p-2 rounded-xl text-lg">📷</button>
-                        <input type="file" accept="image/*" capture="environment" class="hidden" id="cam-f-3" onchange="procesarInput(this, 'fijo-3')">
+                <div id="box-fijo-3" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden transition-all">
+                    <div class="p-4 flex justify-between items-center cursor-pointer" onclick="this.parentElement.classList.toggle('accordion-open')">
+                        <div><label class="block text-[10px] font-black uppercase text-slate-400">Croquis del Grupo</label><span id="badge-fijo-3" class="status-badge bg-red-100 text-red-600">Incompleto</span></div>
+                        <span class="text-slate-400 accordion-arrow">▼</span>
                     </div>
-                    <div class="preview-grid" id="preview-fijo-3"></div>
+                    <div class="accordion-content px-4">
+                        <div class="flex gap-2">
+                            <input type="file" accept="image/*" multiple onchange="procesarInputMultiple(this, 'fijo-3')" class="block w-full text-xs">
+                            <button onclick="document.getElementById('cam-f-3').click()" class="bg-slate-800 text-white p-2 rounded-xl">📷</button>
+                            <input type="file" capture="environment" class="hidden" id="cam-f-3" onchange="procesarInputMultiple(this, 'fijo-3')">
+                        </div>
+                        <div class="preview-grid" id="preview-fijo-3"></div>
+                    </div>
                 </div>
 
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-2">Acta de Compromiso</label>
-                    <div class="flex gap-2">
-                        <input type="file" accept="image/*" onchange="procesarInput(this, 'fijo-2')" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200">
-                        <button onclick="document.getElementById('cam-f-2').click()" class="bg-slate-800 text-white p-2 rounded-xl text-lg">📷</button>
-                        <input type="file" accept="image/*" capture="environment" class="hidden" id="cam-f-2" onchange="procesarInput(this, 'fijo-2')">
+                <div id="box-fijo-2" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden transition-all">
+                    <div class="p-4 flex justify-between items-center cursor-pointer" onclick="this.parentElement.classList.toggle('accordion-open')">
+                        <div><label class="block text-[10px] font-black uppercase text-slate-400">Acta de Compromiso</label><span id="badge-fijo-2" class="status-badge bg-red-100 text-red-600">Incompleto</span></div>
+                        <span class="text-slate-400 accordion-arrow">▼</span>
                     </div>
-                    <div class="preview-grid" id="preview-fijo-2"></div>
+                    <div class="accordion-content px-4">
+                        <div class="flex gap-2">
+                            <input type="file" accept="image/*" multiple onchange="procesarInputMultiple(this, 'fijo-2')" class="block w-full text-xs">
+                            <button onclick="document.getElementById('cam-f-2').click()" class="bg-slate-800 text-white p-2 rounded-xl">📷</button>
+                            <input type="file" capture="environment" class="hidden" id="cam-f-2" onchange="procesarInputMultiple(this, 'fijo-2')">
+                        </div>
+                        <div class="preview-grid" id="preview-fijo-2"></div>
+                    </div>
                 </div>
             </div>
 
             <div class="bg-blue-600 p-5 rounded-2xl shadow-lg">
-                <label class="block text-[10px] font-black uppercase text-blue-200 mb-3 tracking-widest text-center">Registrar nuevo integrante</label>
+                <label class="block text-[10px] font-black uppercase text-blue-200 mb-3 text-center tracking-widest">Registrar nuevo integrante</label>
                 <div class="flex flex-col sm:flex-row gap-2">
                     <input type="text" id="nombre-cliente-temporal" placeholder="Nombres y Apellidos" class="flex-grow p-3 rounded-xl border-none outline-none text-sm font-bold shadow-inner">
-                    <button onclick="confirmarNuevoCliente()" class="bg-white text-blue-600 px-6 py-3 rounded-xl font-black text-sm uppercase hover:bg-blue-50 transition-colors">Confirmar</button>
+                    <button onclick="confirmarNuevoCliente()" class="bg-white text-blue-600 px-6 py-3 rounded-xl font-black text-sm uppercase">Confirmar</button>
                 </div>
             </div>
 
-            <div id="clientes-container" class="space-y-6 pt-4">
+            <div id="clientes-container" class="space-y-3 pt-4">
                 <h2 class="text-xs font-black text-slate-400 uppercase tracking-[0.2em] border-b pb-2">Lista de Expedientes Individuales</h2>
             </div>
         </main>
 
         <footer class="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 pb-6">
-            <button onclick="generarPDF()" class="bg-emerald-500 text-white py-4 rounded-2xl font-black uppercase text-sm shadow-lg shadow-emerald-200 hover:bg-emerald-600 transition-all active:scale-95">Descargar PDF Final</button>
-            <button onclick="borrarTodo()" class="bg-slate-200 text-slate-500 py-4 rounded-2xl font-bold uppercase text-xs hover:bg-red-100 hover:text-red-600 transition-all">Limpiar todo el sistema</button>
+            <button onclick="generarPDF()" class="bg-emerald-500 text-white py-4 rounded-2xl font-black uppercase text-sm shadow-lg">Descargar PDF Final</button>
+            <button onclick="borrarTodoConfirm()" class="bg-slate-200 text-slate-500 py-4 rounded-2xl font-bold uppercase text-xs">Limpiar todo</button>
         </footer>
     </div>
 
     <script>
+        let db, clienteCount = 0;
+        const listaDocs = ["DNI frontal", "DNI posterior", "Selfin de casa", "Selfin negocio", "foto negocio", "negocio 1", "negocio 2", "recibo de luz o DJ", "Sentinel"];
+
+        // --- GESTOS Y ZOOM ---
+        let scale = 1, lastX = 0, lastY = 0, posX = 0, posY = 0, isDragging = false, startDist = 0, initialScale = 1;
+        const viewer = document.getElementById('fullscreen-viewer'), imgFull = document.getElementById('img-full');
+
+        function actualizarTransform() {
+            const rot = imgFull.dataset.rot || 0;
+            imgFull.style.transform = `translate(${posX}px, ${posY}px) rotate(${rot}deg) scale(${scale})`;
+        }
+        viewer.addEventListener('touchstart', e => {
+            if (e.touches.length === 1) { isDragging = true; lastX = e.touches[0].pageX - posX; lastY = e.touches[0].pageY - posY; } 
+            else if (e.touches.length === 2) { isDragging = false; startDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); initialScale = scale; }
+        });
+        viewer.addEventListener('touchmove', e => {
+            e.preventDefault();
+            if (e.touches.length === 1 && isDragging) { posX = e.touches[0].pageX - lastX; posY = e.touches[0].pageY - lastY; } 
+            else if (e.touches.length === 2) { const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); scale = Math.min(Math.max(initialScale * (dist / startDist), 0.5), 5); }
+            actualizarTransform();
+        });
+        viewer.addEventListener('touchend', () => { isDragging = false; });
+        function abrirVisor(b64, rot) { scale = 1; posX = 0; posY = 0; imgFull.src = b64; imgFull.dataset.rot = rot; actualizarTransform(); viewer.style.display = 'flex'; }
+        function cerrarVisor() { viewer.style.display = 'none'; }
+
+        // --- ALERTAS ---
         function mostrarAlerta(m) {
             document.getElementById('custom-alert-message').innerText = m;
+            document.getElementById('custom-alert-input-container').classList.add('hidden');
+            document.getElementById('alert-buttons-container').innerHTML = `<button onclick="cerrarAlerta()" class="bg-slate-800 text-white px-5 py-2 rounded-lg text-xs font-bold uppercase">Entendido</button>`;
+            document.getElementById('custom-alert-overlay').style.display = 'flex';
+        }
+        function mostrarConfirmacion(m, callback) {
+            document.getElementById('custom-alert-message').innerText = m;
+            document.getElementById('custom-alert-input-container').classList.add('hidden');
+            document.getElementById('alert-buttons-container').innerHTML = `<button onclick="cerrarAlerta()" class="bg-slate-200 text-slate-600 px-4 py-2 rounded-lg text-xs font-bold uppercase">Cancelar</button><button id="confirm-btn-action" class="bg-red-600 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase">Confirmar</button>`;
+            document.getElementById('confirm-btn-action').onclick = () => { callback(); cerrarAlerta(); };
+            document.getElementById('custom-alert-overlay').style.display = 'flex';
+        }
+        function mostrarPrompt(m, valInicial, callback) {
+            document.getElementById('custom-alert-message').innerText = m;
+            const inputContainer = document.getElementById('custom-alert-input-container');
+            const input = document.getElementById('custom-alert-input');
+            inputContainer.classList.remove('hidden');
+            input.value = valInicial;
+            document.getElementById('alert-buttons-container').innerHTML = `<button onclick="cerrarAlerta()" class="bg-slate-200 text-slate-600 px-4 py-2 rounded-lg text-xs font-bold uppercase">Cancelar</button><button id="prompt-btn-action" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase">Guardar</button>`;
+            document.getElementById('prompt-btn-action').onclick = () => { callback(input.value); cerrarAlerta(); };
             document.getElementById('custom-alert-overlay').style.display = 'flex';
         }
         function cerrarAlerta() { document.getElementById('custom-alert-overlay').style.display = 'none'; }
 
-        let clienteCount = 0;
-        let db;
-        const listaDocs = ["DNI frontal", "DNI posterior", "Selfin de casa", "Selfin negocio", "foto negocio", "negocio 1", "negocio 2", "recibo de luz o DJ", "Sentinel"];
-
+        // --- DATABASE ---
         const request = indexedDB.open("ExpedienteDB", 1);
         request.onupgradeneeded = (e) => { db = e.target.result; db.createObjectStore("datos", { keyPath: "id" }); };
         request.onsuccess = (e) => { db = e.target.result; restaurarDatos(); };
-
         async function guardarDato(id, valor) { const tx = db.transaction("datos", "readwrite"); tx.objectStore("datos").put({ id, valor }); }
         async function obtenerDato(id) { return new Promise(r => { const tx = db.transaction("datos", "readonly"); const req = tx.objectStore("datos").get(id); req.onsuccess = () => r(req.result ? req.result.valor : null); }); }
         async function eliminarDato(id) { const tx = db.transaction("datos", "readwrite"); tx.objectStore("datos").delete(id); }
 
+        // --- CLIENTES ---
         function confirmarNuevoCliente() {
-            const n = document.getElementById('nombre-cliente-temporal').value.trim();
-            if (!n) { mostrarAlerta("SISTEMA EXPEDIENTE: Es necesario agregar un nombre del cliente para continuar."); return; }
-            agregarCliente(n);
-            document.getElementById('nombre-cliente-temporal').value = "";
+            const input = document.getElementById('nombre-cliente-temporal');
+            if (!input.value.trim()) { mostrarAlerta("Es necesario agregar un nombre del cliente para continuar."); return; }
+            agregarCliente(input.value.trim()); input.value = "";
         }
 
-        function agregarCliente(nom = "", idPersist = null) {
-            if (!idPersist) clienteCount++; else clienteCount = Math.max(clienteCount, idPersist);
+        async function agregarCliente(nom = "", idPersist = null) {
+            if (!idPersist) { clienteCount++; await guardarDato("clienteCount", clienteCount); } 
+            else { clienteCount = Math.max(clienteCount, idPersist); }
             const idActual = idPersist || clienteCount;
-            const container = document.getElementById('clientes-container');
             const div = document.createElement('div');
-            div.className = "bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden";
+            div.className = "bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden transition-all duration-300";
             div.id = `cliente-wrapper-${idActual}`;
-            
-            let ops = listaDocs.map(d => `<option value="${d}">${d}</option>`).join('');
             div.innerHTML = `
-                <div class="p-4 bg-slate-50 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100">
-                    <div class="flex items-center gap-2 flex-grow">
-                        <input type="text" id="nombre-input-${idActual}" value="${nom}" readonly class="bg-transparent font-black text-slate-700 outline-none border-none w-full sm:w-auto min-w-[150px]">
-                        <button onclick="habilitarEdicion(${idActual}, event)" class="text-blue-500 font-bold text-xs p-2 uppercase">Editar</button>
+                <div id="header-cli-${idActual}" class="p-3 flex items-center justify-between gap-2 cursor-pointer transition-colors" onclick="this.parentElement.classList.toggle('accordion-open')">
+                    <div class="flex flex-col min-w-0">
+                        <input type="text" id="input-nom-${idActual}" value="${nom}" readonly class="bg-transparent font-black text-slate-700 outline-none text-sm pointer-events-none truncate max-w-[140px]">
+                        <span id="header-status-${idActual}" class="status-badge w-fit">Incompleto</span>
                     </div>
-                    <div class="flex gap-2">
-                        <button onclick="toggleAcordeon('cliente-${idActual}')" class="bg-white border border-slate-200 px-4 py-2 rounded-xl text-[10px] font-bold uppercase">Ver fotos</button>
-                        <button onclick="eliminarCliente(${idActual})" class="bg-red-50 text-red-500 p-2 rounded-xl">🗑️</button>
+                    <div class="flex items-center gap-3" onclick="event.stopPropagation()">
+                        <div class="flex gap-1">
+                            <button onclick="editarNombreCliente(${idActual})" class="bg-blue-50 text-blue-500 p-2 rounded-lg text-xs">✏️</button>
+                            <button onclick="eliminarClienteConfirm(${idActual})" class="bg-red-50 text-red-500 p-2 rounded-lg text-xs">🗑️</button>
+                        </div>
+                        <span class="text-slate-400 accordion-arrow text-xs">▼</span>
                     </div>
                 </div>
-                <div id="cliente-${idActual}" class="p-4 hidden space-y-4">
-                    <select onchange="validarRequisitosYFlujo(${idActual}, this)" class="w-full p-3 rounded-xl bg-slate-100 text-xs font-bold uppercase outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="">+ Agregar Documento</option>
-                        ${ops}
-                    </select>
-                    <div id="documentos-lista-${idActual}" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
-                </div>
-            `;
-            container.appendChild(div);
-            if(!idPersist) { guardarDato(`cliente-${idActual}-nombre`, nom); guardarDato("clienteCount", clienteCount); }
+                <div id="cliente-${idActual}" class="accordion-content px-4 bg-white">
+                    <div class="border-t pt-4 space-y-4">
+                        <select onchange="validarRequisitosYFlujo(${idActual}, this)" class="w-full p-3 rounded-xl bg-slate-100 text-xs font-black uppercase outline-none">
+                            <option value="">+ AGREGAR SECCIÓN</option>
+                            ${listaDocs.map(d => `<option value="${d}">${d}</option>`).join('')}
+                        </select>
+                        <div id="documentos-lista-${idActual}" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+                    </div>
+                </div>`;
+            document.getElementById('clientes-container').appendChild(div);
+            if(!idPersist) guardarDato(`cliente-${idActual}-nombre`, nom);
+            verificarEstadoCliente(idActual);
         }
 
-        function habilitarEdicion(id, ev) {
-            const inp = document.getElementById(`nombre-input-${id}`);
-            const btn = ev.currentTarget;
-            if (inp.readOnly) {
-                inp.readOnly = false; inp.focus(); inp.style.borderBottom = "2px solid #3b82f6"; btn.innerText = "GUARDAR";
-            } else {
-                inp.readOnly = true; inp.style.borderBottom = "none"; btn.innerText = "EDITAR";
-                guardarDato(`cliente-${id}-nombre`, inp.value);
-            }
+        async function editarNombreCliente(id) {
+            const actual = document.getElementById(`input-nom-${id}`).value;
+            mostrarPrompt("Editar nombre del cliente:", actual, async (nuevoNom) => {
+                if(nuevoNom && nuevoNom.trim() !== "") {
+                    document.getElementById(`input-nom-${id}`).value = nuevoNom.trim();
+                    await guardarDato(`cliente-${id}-nombre`, nuevoNom.trim());
+                }
+            });
         }
 
-        async function procesarInput(input, sId) {
-            if (input.files && input.files[0]) {
-                const b64 = await readFileAsDataURL(input.files[0]);
-                await guardarDato(sId, b64); await guardarDato(sId + "-rot", 0);
-                renderPreview(sId, b64, 0);
-            }
-        }
-
-        async function procesarMultipleSolicitud(input) {
+        // --- FOTOS ---
+        async function procesarInputMultiple(input, sIdBase) {
             if (input.files) {
-                const arr = Array.from(input.files);
-                let cur = 0; for(let i=0; i<4; i++) if(await obtenerDato(`fijo-1-${i}`)) cur++;
-                for(let f of arr.slice(0, 4 - cur)) {
-                    for(let i=0; i<4; i++) {
-                        if(!(await obtenerDato(`fijo-1-${i}`))) {
-                            const b64 = await readFileAsDataURL(f);
-                            await guardarDato(`fijo-1-${i}`, b64); await guardarDato(`fijo-1-${i}-rot`, 0);
-                            renderPreview(`fijo-1-${i}`, b64, 0); break;
+                const files = Array.from(input.files);
+                for (let file of files) {
+                    const b64 = await readFileAsDataURL(file);
+                    if (sIdBase === 'fijo-1') {
+                        for (let i = 0; i < 4; i++) {
+                            if (!(await obtenerDato(`fijo-1-${i}`))) {
+                                await guardarDato(`fijo-1-${i}`, b64); await guardarDato(`fijo-1-${i}-rot`, 0);
+                                renderPreview(`fijo-1-${i}`, b64, 0); break;
+                            }
                         }
+                    } else {
+                        await guardarDato(sIdBase, b64); await guardarDato(sIdBase + "-rot", 0);
+                        renderPreview(sIdBase, b64, 0);
                     }
                 }
+                actualizarColorGrupo(sIdBase);
+                if (sIdBase.includes('img-')) { const p = sIdBase.split('-'); verificarEstadoCliente(p[1]); }
                 input.value = "";
             }
         }
 
-        function renderPreview(sId, b64, rot) {
-            let c;
-            if (sId.startsWith('fijo-1-')) {
-                let sc = document.getElementById(`preview-item-${sId}`);
-                if(!sc) { sc = document.createElement('div'); sc.id = `preview-item-${sId}`; sc.className = "preview-item"; document.getElementById('preview-solicitud-grid').appendChild(sc); }
-                c = sc;
-            } else { c = document.getElementById(`preview-${sId}`); if(!c) return; }
-            c.innerHTML = `
-                <div class="preview-img-container">
-                    <button class="btn-mini-delete-img" onclick="quitarFoto('${sId}')">X</button>
-                    <button class="btn-mini-rotate" onclick="rotarImagen('${sId}')">↺</button>
-                    <img src="${b64}" class="preview-img" style="transform: rotate(${rot}deg)">
-                </div>
-            `;
+        async function actualizarColorGrupo(idRef) {
+            const boxId = idRef.startsWith('fijo-1-') || idRef === 'fijo-1' ? 'fijo-1' : idRef;
+            const box = document.getElementById(`box-${boxId}`), badge = document.getElementById(`badge-${boxId}`);
+            if (!box || !badge) return;
+            let tiene = false;
+            if (boxId === 'fijo-1') { for(let i=0; i<4; i++) if(await obtenerDato(`fijo-1-${i}`)) { tiene = true; break; } } 
+            else if(await obtenerDato(idRef)) tiene = true;
+            if(tiene) { box.className = "bg-white rounded-2xl shadow-sm border transition-all seccion-completa overflow-hidden"; badge.innerText = "Completo"; badge.className = "status-badge bg-emerald-100 text-emerald-600"; }
+            else { box.className = "bg-white rounded-2xl shadow-sm border transition-all seccion-incompleta overflow-hidden"; badge.innerText = "Incompleto"; badge.className = "status-badge bg-red-100 text-red-600"; }
         }
 
-        async function rotarImagen(sId) {
-            let r = ( (await obtenerDato(sId + "-rot") || 0) + 90) % 360;
-            await guardarDato(sId + "-rot", r); renderPreview(sId, await obtenerDato(sId), r);
-        }
-
-        async function quitarFoto(sId) {
-            if(confirm("¿Eliminar fotografía?")) {
-                await eliminarDato(sId); await eliminarDato(sId + "-rot");
-                if (sId.startsWith('fijo-1-')) document.getElementById(`preview-item-${sId}`)?.remove();
-                else document.getElementById(`preview-${sId}`).innerHTML = "";
+        async function verificarEstadoCliente(cliId) {
+            const h = document.getElementById(`header-cli-${cliId}`), b = document.getElementById(`header-status-${cliId}`), o = await obtenerDato(`cli-${cliId}-orden`) || [];
+            if (o.length === 0) { h.className = "p-3 flex items-center justify-between gap-2 cursor-pointer border rounded-2xl bg-slate-50"; b.innerText = "Sin secciones"; return; }
+            let inc = false; for (let i of o) { if (!(await obtenerDato(`img-${cliId}-${i.id}-0`))) { inc = true; break; } }
+            if (inc) { h.parentElement.className = "bg-white border transition-all cliente-header-incompleto rounded-2xl overflow-hidden"; b.innerText = "Incompleto"; b.className = "status-badge bg-red-100 text-red-600"; }
+            else { h.parentElement.className = "bg-white border transition-all cliente-header-completo rounded-2xl overflow-hidden"; b.innerText = "Completo"; b.className = "status-badge bg-emerald-100 text-emerald-600"; }
+            for (let i of o) {
+                const foto = await obtenerDato(`img-${cliId}-${i.id}-0`);
+                const secBox = document.getElementById(`doc-wrapper-${i.id}`);
+                const secBadge = document.getElementById(`badge-${i.id}`);
+                if(secBox) secBox.className = `bg-slate-50 p-3 rounded-2xl border transition-all ${!foto ? 'seccion-incompleta' : 'seccion-completa'}`;
+                if(secBadge) { secBadge.innerText = !foto ? 'Incompleto' : 'Completo'; secBadge.className = `status-badge ${!foto ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`; }
             }
+        }
+
+        async function crearCampoDoc(cliId, t, idUG = null) {
+            const idU = idUG || Date.now() + Math.random().toString(36).substr(2, 4), sId = `img-${cliId}-${idU}-0`, foto = await obtenerDato(sId);
+            const div = document.createElement('div'); div.id = `doc-wrapper-${idU}`;
+            div.className = `bg-slate-50 p-3 rounded-2xl border transition-all ${!foto ? 'seccion-incompleta' : 'seccion-completa'}`;
+            div.innerHTML = `
+                <div class="flex justify-between items-center mb-2">
+                    <div><span class="text-[9px] font-black uppercase text-slate-400">${t}</span><br><span id="badge-${idU}" class="status-badge">Incompleto</span></div>
+                    <button onclick="eliminarSeccionDocConfirm('${cliId}','${idU}')" class="text-red-400 text-[9px] font-bold uppercase">Quitar</button>
+                </div>
+                <div class="flex gap-2 mb-2">
+                    <input type="file" accept="image/*" multiple onchange="procesarInputMultiple(this,'${sId}')" class="text-[10px] w-full">
+                    <button onclick="document.getElementById('cam-${sId}').click()" class="bg-white border p-1 rounded-lg">📷</button>
+                    <input type="file" capture="environment" class="hidden" id="cam-${sId}" onchange="procesarInputMultiple(this,'${sId}')">
+                </div>
+                <div class="preview-grid" id="preview-${sId}"></div>`;
+            document.getElementById(`documentos-lista-${cliId}`).appendChild(div);
+            if(!idUG) { let o = await obtenerDato(`cli-${cliId}-orden`) || []; o.push({id:idU, tipo:t}); await guardarDato(`cli-${cliId}-orden`, o); verificarEstadoCliente(cliId); }
+            if(foto) renderPreview(sId, foto, await obtenerDato(sId + "-rot") || 0);
+        }
+
+        function renderPreview(sId, b64, rot) {
+            let container;
+            if (sId.startsWith('fijo-1-')) {
+                container = document.getElementById(`preview-item-${sId}`) || (() => { let n = document.createElement('div'); n.id = `preview-item-${sId}`; document.getElementById('preview-fijo-1').appendChild(n); return n; })();
+            } else { container = document.getElementById(`preview-${sId}`); }
+            if(!container) return;
+            container.innerHTML = `<div class="preview-img-container" onclick="abrirVisor('${b64}', ${rot})"><button class="btn-mini-delete-img" onclick="event.stopPropagation(); quitarFotoConfirm('${sId}')">X</button><button class="btn-mini-rotate" onclick="event.stopPropagation(); rotarImagen('${sId}')">↺</button><img src="${b64}" class="preview-img" style="transform: rotate(${rot}deg)"></div>`;
+        }
+
+        async function rotarImagen(sId) { let r = ((await obtenerDato(sId + "-rot") || 0) + 90) % 360; await guardarDato(sId + "-rot", r); renderPreview(sId, await obtenerDato(sId), r); }
+        async function quitarFotoConfirm(sId) { mostrarConfirmacion("¿Desea eliminar esta fotografía?", async () => { await eliminarDato(sId); location.reload(); }); }
+        function readFileAsDataURL(f) { return new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result); rd.readAsDataURL(f); }); }
+        
+        async function restaurarDatos() {
+            for(let i of ['fijo-0', 'fijo-1', 'fijo-2', 'fijo-3']) {
+                if(i === 'fijo-1') { for(let j=0; j<4; j++) { const f = await obtenerDato(`fijo-1-${j}`); if(f) renderPreview(`fijo-1-${j}`, f, await obtenerDato(`fijo-1-${j}-rot`) || 0); } }
+                else { const f = await obtenerDato(i); if(f) renderPreview(i, f, await obtenerDato(i + "-rot") || 0); }
+                actualizarColorGrupo(i);
+            }
+            const sc = await obtenerDato("clienteCount") || 0;
+            for(let i=1; i<=sc; i++) { const n = await obtenerDato(`cliente-${i}-nombre`); if(n !== null) { await agregarCliente(n, i); const o = await obtenerDato(`cli-${i}-orden`) || []; for(let it of o) { await crearCampoDoc(i, it.tipo, it.id); } } }
+        }
+
+        async function eliminarClienteConfirm(id) { mostrarConfirmacion("¿Desea eliminar este integrante?", async () => { document.getElementById(`cliente-wrapper-${id}`).remove(); await eliminarDato(`cliente-${id}-nombre`); await eliminarDato(`cli-${id}-orden`); }); }
+        async function eliminarSeccionDocConfirm(cliId, idU) { mostrarConfirmacion("¿Desea quitar esta sección?", async () => { document.getElementById(`doc-wrapper-${idU}`).remove(); let o = (await obtenerDato(`cli-${cliId}-orden`) || []).filter(i => i.id !== idU); await guardarDato(`cli-${cliId}-orden`, o); verificarEstadoCliente(cliId); }); }
+        function borrarTodoConfirm() { mostrarConfirmacion("¿Borrar todo?", () => { indexedDB.deleteDatabase("ExpedienteDB"); location.reload(); }); }
+
+        // --- GENERACIÓN DE PDF CORREGIDO (SIN HOJA EN BLANCO FINAL) ---
+        async function generarPDF() {
+            const fechaActual = new Date().toLocaleDateString().replace(/\//g, '-');
+            const nombreSugerido = `Expediente_Grupo_${fechaActual}`;
+            
+            mostrarPrompt("Ingrese un nombre para el archivo PDF:", nombreSugerido, async (nombreArchivo) => {
+                if (!nombreArchivo || nombreArchivo.trim() === "") nombreArchivo = nombreSugerido;
+                
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                mostrarAlerta("Generando PDF, por favor espere...");
+
+                const drawWithBorder = async (imgId, x, y, w, h) => {
+                    const b64 = await obtenerDato(imgId);
+                    if (b64) {
+                        try {
+                            doc.setDrawColor(200, 200, 200);
+                            doc.setLineWidth(0.2);
+                            doc.rect(x - 0.5, y - 0.5, w + 1, h + 1);
+                            doc.addImage(b64, 'JPEG', x, y, w, h);
+                            return true;
+                        } catch(e) { return false; }
+                    }
+                    return false;
+                };
+
+                const drawSeccionGrupal = async (imgId, titulo) => {
+                    doc.setFontSize(16); doc.setTextColor(0, 0, 0);
+                    doc.text(titulo, 10, 15);
+                    const exito = await drawWithBorder(imgId, 10, 25, 190, 250);
+                    if(!exito) { doc.setFontSize(10); doc.text("(Sección vacía)", 10, 30); }
+                };
+
+                // 1. COMITÉ
+                await drawSeccionGrupal("fijo-0", "COMITÉ DE CRÉDITO");
+                doc.addPage();
+
+                // 2. SOLICITUD
+                doc.setFontSize(16); doc.text("SOLICITUD DE CRÉDITO", 10, 15);
+                let tieneSol = false;
+                for(let j=0; j<4; j++){
+                    const fSol = await obtenerDato(`fijo-1-${j}`);
+                    if(fSol){
+                        if(tieneSol) { doc.addPage(); doc.text("SOLICITUD DE CRÉDITO (Continuación)", 10, 15); }
+                        await drawWithBorder(`fijo-1-${j}`, 10, 25, 190, 250);
+                        tieneSol = true;
+                    }
+                }
+                if(!tieneSol) { doc.text("(Sección vacía)", 10, 30); }
+                doc.addPage();
+
+                // 3. CROQUIS
+                await drawSeccionGrupal("fijo-3", "CROQUIS DEL GRUPO");
+                doc.addPage();
+
+                // 4. ACTA
+                await drawSeccionGrupal("fijo-2", "ACTA DE COMPROMISO");
+                
+                // CLIENTES INDIVIDUALES
+                const sc = await obtenerDato("clienteCount") || 0;
+                let clientesValidos = [];
+                for(let i=1; i<=sc; i++) {
+                    const nom = await obtenerDato(`cliente-${i}-nombre`);
+                    if(nom) clientesValidos.push({id: i, nombre: nom});
+                }
+
+                for(let idxCli=0; idxCli < clientesValidos.length; idxCli++) {
+                    doc.addPage(); // Siempre agregamos página antes de empezar un nuevo cliente
+                    const cli = clientesValidos[idxCli];
+                    const orden = await obtenerDato(`cli-${cli.id}-orden`) || [];
+
+                    // HOJA DNIs
+                    doc.setFontSize(14); doc.setTextColor(0, 0, 255);
+                    doc.text(`INTEGRANTE: ${cli.nombre} - DNI`, 10, 15);
+                    doc.setTextColor(0, 0, 0);
+                    let dniF = orden.find(it => it.tipo === "DNI frontal");
+                    let dniP = orden.find(it => it.tipo === "DNI posterior");
+                    if(dniF) await drawWithBorder(`img-${cli.id}-${dniF.id}-0`, 10, 25, 190, 115);
+                    if(dniP) await drawWithBorder(`img-${cli.id}-${dniP.id}-0`, 10, 150, 190, 115);
+
+                    // HOJA NEGOCIO
+                    doc.addPage();
+                    doc.setTextColor(0, 0, 255);
+                    doc.text(`INTEGRANTE: ${cli.nombre} - NEGOCIO`, 10, 15);
+                    doc.setTextColor(0, 0, 0);
+                    let sCasa = orden.find(it => it.tipo === "Selfin de casa");
+                    let sNeg = orden.find(it => it.tipo === "Selfin negocio");
+                    let fNeg = orden.find(it => it.tipo === "foto negocio");
+                    let n1 = orden.find(it => it.tipo === "negocio 1");
+                    let n2 = orden.find(it => it.tipo === "negocio 2");
+                    if(sCasa) await drawWithBorder(`img-${cli.id}-${sCasa.id}-0`, 10, 25, 93, 70);
+                    if(sNeg) await drawWithBorder(`img-${cli.id}-${sNeg.id}-0`, 107, 25, 93, 70);
+                    if(fNeg) await drawWithBorder(`img-${cli.id}-${fNeg.id}-0`, 10, 100, 190, 95);
+                    if(n1) await drawWithBorder(`img-${cli.id}-${n1.id}-0`, 10, 200, 93, 70);
+                    if(n2) await drawWithBorder(`img-${cli.id}-${n2.id}-0`, 107, 200, 93, 70);
+
+                    // HOJA OTROS
+                    doc.addPage();
+                    doc.setTextColor(0, 0, 255);
+                    doc.text(`INTEGRANTE: ${cli.nombre} - OTROS`, 10, 15);
+                    doc.setTextColor(0, 0, 0);
+                    let rec = orden.find(it => it.tipo === "recibo de luz o DJ");
+                    let sen = orden.find(it => it.tipo === "Sentinel");
+                    if(rec) await drawWithBorder(`img-${cli.id}-${rec.id}-0`, 10, 25, 190, 115);
+                    if(sen) await drawWithBorder(`img-${cli.id}-${sen.id}-0`, 10, 150, 190, 115);
+                }
+
+                doc.save(`${nombreArchivo}.pdf`);
+                cerrarAlerta();
+            });
         }
 
         async function validarRequisitosYFlujo(cliId, sel) {
             const tipo = sel.value; if(!tipo) return;
             const ord = await obtenerDato(`cli-${cliId}-orden`) || [];
-            if(ord.some(i => i.tipo === tipo)) { mostrarAlerta("SISTEMA EXPEDIENTE: Esta sección ya ha sido agregada."); sel.value = ""; return; }
-
+            if(ord.some(i => i.tipo === tipo)) { mostrarAlerta("Esta sección ya ha sido agregada."); sel.value = ""; return; }
             if(tipo === "negocio 1" || tipo === "negocio 2") {
                 const reqs = ["DNI frontal", "DNI posterior", "Selfin de casa", "Selfin negocio", "foto negocio"];
                 let falt = reqs.filter(r => !ord.some(i => i.tipo === r));
-                if(falt.length > 0) { mostrarAlerta(`SISTEMA EXPEDIENTE: No se permite agregar esta sección sin haber agregado: ${falt.join(", ")}`); sel.value = ""; return; }
+                if(falt.length > 0) { mostrarAlerta(`Faltan secciones obligatorias: ${falt.join(", ")}`); sel.value = ""; return; }
             } else {
                 const idx = listaDocs.indexOf(tipo);
-                for(let i=0; i<idx; i++) {
-                    if(listaDocs[i].includes("negocio")) continue;
-                    if(!ord.some(it => it.tipo === listaDocs[i])) { mostrarAlerta(`SISTEMA EXPEDIENTE: Debe agregar primero "${listaDocs[i]}" según el flujo obligatorio.`); sel.value = ""; return; }
-                }
+                for(let i=0; i<idx; i++) { if(listaDocs[i].includes("negocio")) continue; if(!ord.some(it => it.tipo === listaDocs[i])) { mostrarAlerta(`Falta sección previa: ${listaDocs[i]}`); sel.value = ""; return; } }
             }
             crearCampoDoc(cliId, tipo); sel.value = "";
         }
-
-        async function crearCampoDoc(cliId, t, idUG = null) {
-            const c = document.getElementById(`documentos-lista-${cliId}`);
-            const idU = idUG || Date.now() + Math.random().toString(36).substr(2, 4);
-            const div = document.createElement('div');
-            div.className = "bg-slate-50 p-3 rounded-2xl border border-slate-100";
-            div.id = `doc-wrapper-${idU}`; div.setAttribute('data-tipo', t);
-            const sId = `img-${cliId}-${idU}-0`;
-            div.innerHTML = `
-                <div class="flex justify-between items-center mb-2"><span class="text-[9px] font-black uppercase text-slate-400 tracking-wider">${t}</span><button onclick="eliminarSeccionDoc('${cliId}', '${idU}')" class="text-red-400 text-[9px] font-bold uppercase">Quitar</button></div>
-                <div class="flex gap-2 mb-2">
-                    <input type="file" onchange="procesarInput(this, '${sId}')" class="text-[10px] w-full">
-                    <button onclick="document.getElementById('cam-${sId}').click()" class="bg-white border p-1 rounded-lg">📷</button>
-                    <input type="file" capture="environment" class="hidden" id="cam-${sId}" onchange="procesarInput(this, '${sId}')">
-                </div>
-                <div class="preview-grid" id="preview-${sId}"></div>
-            `;
-            const iR = listaDocs.indexOf(t);
-            const hs = Array.from(c.children); let ins = false;
-            for (let h of hs) { if (listaDocs.indexOf(h.getAttribute('data-tipo')) > iR) { c.insertBefore(div, h); ins = true; break; } }
-            if (!ins) c.appendChild(div);
-            if(!idUG) { let o = await obtenerDato(`cli-${cliId}-orden`) || []; o.push({id: idU, tipo: t}); await guardarDato(`cli-${cliId}-orden`, o); }
-        }
-
-        async function eliminarSeccionDoc(cliId, idU) {
-            if(confirm("¿Eliminar esta sección?")) {
-                document.getElementById(`doc-wrapper-${idU}`).remove();
-                let o = (await obtenerDato(`cli-${cliId}-orden`) || []).filter(i => i.id !== idU);
-                await guardarDato(`cli-${cliId}-orden`, o);
-                await eliminarDato(`img-${cliId}-${idU}-0`); await eliminarDato(`img-${cliId}-${idU}-0-rot`);
-            }
-        }
-
-        async function restaurarDatos() {
-            for(let i of [0, 3, 2]) { const f = await obtenerDato(`fijo-${i}`); if(f) renderPreview(`fijo-${i}`, f, await obtenerDato(`fijo-${i}-rot`) || 0); }
-            for(let i=0; i<4; i++) { const f = await obtenerDato(`fijo-1-${i}`); if(f) renderPreview(`fijo-1-${i}`, f, await obtenerDato(`fijo-1-${i}-rot`) || 0); }
-            const sc = await obtenerDato("clienteCount") || 0;
-            for(let i=1; i<=sc; i++) {
-                const n = await obtenerDato(`cliente-${i}-nombre`);
-                if(n !== null) {
-                    agregarCliente(n, i);
-                    const o = await obtenerDato(`cli-${i}-orden`) || [];
-                    for(let it of o.sort((a,b) => listaDocs.indexOf(a.tipo) - listaDocs.indexOf(b.tipo))) {
-                        await crearCampoDoc(i, it.tipo, it.id);
-                        const sId = `img-${i}-${it.id}-0`; const f = await obtenerDato(sId);
-                        if(f) renderPreview(sId, f, await obtenerDato(sId + "-rot") || 0);
-                    }
-                }
-            }
-        }
-
-        async function prepararImagenPDF(sId) {
-            const d = await obtenerDato(sId); if (!d) return null;
-            const r = await obtenerDato(sId + "-rot") || 0;
-            const img = new Image(); img.src = d; await img.decode();
-            const canv = document.createElement('canvas'); const ctx = canv.getContext('2d');
-            if(r === 90 || r === 270) { canv.width = img.height; canv.height = img.width; } else { canv.width = img.width; canv.height = img.height; }
-            ctx.translate(canv.width/2, canv.height/2); ctx.rotate(r * Math.PI / 180); ctx.drawImage(img, -img.width/2, -img.height/2);
-            return { url: canv.toDataURL('image/jpeg', 0.8), w: canv.width, h: canv.height };
-        }
-
-        async function generarPDF() {
-            const { jsPDF } = window.jspdf; const doc = new jsPDF('p', 'mm', 'a4');
-            const pw = doc.internal.pageSize.getWidth(); const ph = doc.internal.pageSize.getHeight();
-            let first = true;
-            const addImg = (obj, x, y, mw, mh) => {
-                const r = obj.w / obj.h; let w = mw, h = w / r; if (h > mh) { h = mh; w = h * r; }
-                doc.addImage(obj.url, 'JPEG', x + (mw - w) / 2, y + (mh - h) / 2, w, h);
-            };
-            const addNom = (n) => { doc.setFontSize(10); doc.setTextColor(100); doc.text(`CLIENTE: ${n.toUpperCase()}`, 10, 8); };
-
-            const cmt = await prepararImagenPDF('fijo-0'); if(cmt) { doc.addImage(cmt.url, 'JPEG', 10, 10, pw-20, ph-20); first = false; }
-            for(let i=0; i<4; i++) {
-                const f = await prepararImagenPDF(`fijo-1-${i}`);
-                if(f) { if(!first) doc.addPage(); addImg(f, 10, 10, pw-20, ph-20); first = false; }
-            }
-            for(let k of ['fijo-3', 'fijo-2']) { const f = await prepararImagenPDF(k); if(f) { doc.addPage(); addImg(f, 10, 10, pw-20, ph-20); } }
-
-            const sc = await obtenerDato("clienteCount") || 0;
-            for (let i = 1; i <= sc; i++) {
-                const n = await obtenerDato(`cliente-${i}-nombre`); if (n === null) continue;
-                const o = await obtenerDato(`cli-${i}-orden`) || [];
-                const dcs = [];
-                for (let it of o.sort((a,b) => listaDocs.indexOf(a.tipo) - listaDocs.indexOf(b.tipo))) {
-                    const f = await prepararImagenPDF(`img-${i}-${it.id}-0`); if (f) dcs.push({ tipo: it.tipo, foto: f });
-                }
-                const dnis = dcs.filter(d => d.tipo.startsWith("DNI")).map(d => d.foto);
-                if (dnis.length > 0) { doc.addPage(); addNom(n); if (dnis[0]) addImg(dnis[0], 10, 10, pw - 20, (ph / 2) - 15); if (dnis[1]) addImg(dnis[1], 10, ph / 2, pw - 20, (ph / 2) - 15); }
-                const grd = dcs.filter(d => ["Selfin de casa", "Selfin negocio", "foto negocio", "negocio 1", "negocio 2"].includes(d.tipo)).map(d => d.foto);
-                if (grd.length > 0) {
-                    doc.addPage(); addNom(n); let x = 10, y = 15, bw = (pw-30)/2, bh = (ph-40)/3;
-                    grd.forEach((im, ix) => { if(ix > 0 && ix % 6 === 0) { doc.addPage(); addNom(n); x=10; y=15; } addImg(im, x, y, bw, bh); x += bw + 10; if(x + bw > pw) { x = 10; y += bh + 10; } });
-                }
-                const fin = dcs.filter(d => ["recibo de luz o DJ", "Sentinel"].includes(d.tipo)).map(d => d.foto);
-                if (fin.length > 0) { doc.addPage(); addNom(n); if (fin[0]) addImg(fin[0], 10, 10, pw - 20, (ph / 2) - 15); if (fin[1]) addImg(fin[1], 10, ph / 2, pw - 20, (ph / 2) - 15); }
-            }
-            doc.save(`Expediente_${new Date().getTime()}.pdf`);
-        }
-
-        async function eliminarCliente(id) {
-            if(confirm("¿Eliminar este expediente individual?")) {
-                document.getElementById(`cliente-wrapper-${id}`).remove();
-                const o = await obtenerDato(`cli-${id}-orden`) || [];
-                for(let it of o) { await eliminarDato(`img-${id}-${it.id}-0`); await eliminarDato(`img-${id}-${it.id}-0-rot`); }
-                await eliminarDato(`cli-${id}-orden`); await eliminarDato(`cliente-${id}-nombre`);
-            }
-        }
-
-        function toggleAcordeon(id) { document.getElementById(id).classList.toggle('hidden'); }
-        function borrarTodo() { if(confirm("¿Borrar todos los datos?")) { indexedDB.deleteDatabase("ExpedienteDB"); location.reload(); } }
-        function readFileAsDataURL(f) { return new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result); rd.readAsDataURL(f); }); }
     </script>
 </body>
 </html>
